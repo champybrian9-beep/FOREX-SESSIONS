@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>World Clock – Nairobi Time</title>
+<style>
+:root{--bg:#f6f5f1;--card:#fff;--text:#1c1c1a;--muted:#6b6b66;--line:#e3e1da;--open:#1a7f4b;--openbg:#e0f3e8;--closed:#b3392f;--closedbg:#fbe5e2;--main:#14352a;--maintext:#f3f1ea;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#121211;--card:#1c1c1a;--text:#efede6;--muted:#9a9890;--line:#2e2d2a;--open:#5fd391;--openbg:#16301f;--closed:#ff8a7e;--closedbg:#3a1d1a;--main:#1d4a38;--maintext:#f3f1ea;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#121211;--card:#1c1c1a;--text:#efede6;--muted:#9a9890;--line:#2e2d2a;--open:#5fd391;--openbg:#16301f;--closed:#ff8a7e;--closedbg:#3a1d1a;--main:#1d4a38;--maintext:#f3f1ea;color-scheme:dark}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+.wrap{max-width:760px;margin:0 auto;padding:24px 16px 40px}
+h1{font-size:15px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:0 0 14px}
+.main{background:var(--main);color:var(--maintext);border-radius:20px;padding:28px 24px;margin-bottom:16px}
+.main .city{font-size:15px;opacity:.8;letter-spacing:.04em}
+.main .time{font-size:clamp(52px,16vw,88px);font-weight:700;font-variant-numeric:tabular-nums;line-height:1.05;margin:6px 0}
+.main .row{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px}
+.main .date{opacity:.8;font-size:15px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px}
+.card .top{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.card .city{font-weight:600;font-size:16px}
+.card .time{font-size:34px;font-weight:700;font-variant-numeric:tabular-nums;margin:8px 0 2px}
+.card .meta{color:var(--muted);font-size:13px}
+.badge{font-size:12px;font-weight:700;letter-spacing:.06em;padding:4px 10px;border-radius:999px;white-space:nowrap}
+.badge.open{background:var(--openbg);color:var(--open)}
+.badge.closed{background:var(--closedbg);color:var(--closed)}
+.main .badge.open{background:#d9f5e4;color:#14633a}
+.main .badge.closed{background:#fbe5e2;color:#9a2c23}
+.note{color:var(--muted);font-size:13px;margin-top:18px;text-align:center}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>World Clock</h1>
+  <div class="main">
+    <div class="city">NAIROBI, KENYA · EAT (UTC+3)</div>
+    <div class="time" id="t-nairobi">--:--:--</div>
+    <div class="row"><span class="date" id="d-nairobi"></span><span class="badge" id="b-nairobi"></span></div>
+  </div>
+  <div class="grid" id="grid"></div>
+  <p class="note">OPEN = Monday to Friday, 9:00 to 17:00 local time.</p>
+</div>
+<script>
+var ZONES=[
+ {id:"london",name:"London",tz:"Europe/London"},
+ {id:"newyork",name:"New York",tz:"America/New_York"},
+ {id:"tokyo",name:"Tokyo",tz:"Asia/Tokyo"},
+ {id:"sydney",name:"Sydney",tz:"Australia/Sydney"}
+];
+var NAIROBI="Africa/Nairobi";
+function get(tz,d){
+  var f=new Intl.DateTimeFormat("en-GB",{timeZone:tz,year:"numeric",month:"short",day:"numeric",weekday:"short",hour:"2-digit",minute:"2-digit",second:"2-digit",hourCycle:"h23"});
+  var o={};f.formatToParts(d).forEach(function(p){o[p.type]=p.value});
+  var mi={Jan:0,Feb:1,Mar:2,Apr:3,May:4,Jun:5,Jul:6,Aug:7,Sep:8,Oct:9,Nov:10,Dec:11};
+  o.utc=Date.UTC(+o.year,mi[o.month],+o.day,+o.hour,+o.minute,+o.second);
+  o.h=+o.hour;
+  o.open=(o.weekday!=="Sat"&&o.weekday!=="Sun"&&o.h>=9&&o.h<17);
+  o.clock=o.hour+":"+o.minute+":"+o.second;
+  o.date=o.weekday+", "+o.day+" "+o.month+" "+o.year;
+  return o;
+}
+function badge(el,open){el.textContent=open?"OPEN":"CLOSED";el.className="badge "+(open?"open":"closed")}
+function diff(h){
+  if(h===0)return "Same time as Nairobi";
+  var a=Math.abs(h),s=(a%1?a.toFixed(1):a)+" hr"+(a===1?"":"s");
+  return s+(h>0?" ahead of":" behind")+" Nairobi";
+}
+var grid=document.getElementById("grid");
+ZONES.forEach(function(z){
+  var c=document.createElement("div");c.className="card";
+  c.innerHTML='<div class="top"><span class="city">'+z.name+'</span><span class="badge" id="b-'+z.id+'"></span></div>'+
+   '<div class="time" id="t-'+z.id+'"></div><div class="meta" id="d-'+z.id+'"></div><div class="meta" id="o-'+z.id+'"></div>';
+  grid.appendChild(c);
+});
+function tick(){
+  var now=new Date(),n=get(NAIROBI,now);
+  document.getElementById("t-nairobi").textContent=n.clock;
+  document.getElementById("d-nairobi").textContent=n.date;
+  badge(document.getElementById("b-nairobi"),n.open);
+  ZONES.forEach(function(z){
+    var g=get(z.tz,now);
+    document.getElementById("t-"+z.id).textContent=g.clock;
+    document.getElementById("d-"+z.id).textContent=g.date;
+    document.getElementById("o-"+z.id).textContent=diff((g.utc-n.utc)/3600000);
+    badge(document.getElementById("b-"+z.id),g.open);
+  });
+}
+tick();setInterval(tick,1000);
+</script>
+</body>
+</html>
